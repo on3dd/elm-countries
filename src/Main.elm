@@ -1,4 +1,4 @@
-module Main exposing (Model(..), Msg(..), init, main, search, searchDecoder, subscriptions, update, view, viewResponse)
+module Main exposing (Model, Msg(..), init, main, search, searchDecoder, subscriptions, update, view, viewResponse)
 
 import Browser
 import Html exposing (..)
@@ -6,6 +6,10 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as D exposing (Decoder, field, list, map2, string)
+
+
+
+-- TYPES
 
 
 type alias Country =
@@ -32,7 +36,13 @@ main =
 -- MODEL
 
 
-type Model
+type alias Model =
+    { content : String
+    , status : Status
+    }
+
+
+type Status
     = Failure
     | Loading
     | Success (List Country)
@@ -40,7 +50,7 @@ type Model
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Loading, search )
+    ( { content = "", status = Loading }, search Nothing )
 
 
 
@@ -48,23 +58,27 @@ init _ =
 
 
 type Msg
-    = MorePlease
+    = Reload
+    | Search String
     | GotResponse (Result Http.Error (List Country))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg _ =
+update msg model =
     case msg of
-        MorePlease ->
-            ( Loading, search )
+        Reload ->
+            ( { model | status = Loading }, search Nothing )
+
+        Search str ->
+            ( { model | content = str, status = Loading }, search (Just str) )
 
         GotResponse result ->
             case result of
                 Ok list ->
-                    ( Success list, Cmd.none )
+                    ( { model | status = Success list }, Cmd.none )
 
                 Err _ ->
-                    ( Failure, Cmd.none )
+                    ( { model | status = Failure }, Cmd.none )
 
 
 
@@ -90,19 +104,35 @@ view model =
 
 viewResponse : Model -> Html Msg
 viewResponse model =
-    case model of
+    case model.status of
         Failure ->
             div []
                 [ text "I could not load a list of countries for some reason. "
-                , button [ onClick MorePlease ] [ text "Try Again!" ]
+                , button [ onClick Reload ] [ text "Try Again!" ]
                 ]
 
         Loading ->
-            text "Loading..."
+            div []
+                [ input
+                    [ placeholder "Enter the country name"
+                    , style "display" "block"
+                    , value model.content
+                    , onInput Search
+                    , disabled True
+                    ]
+                    []
+                , text "Loading..."
+                ]
 
         Success list ->
             div []
-                [ button [ onClick MorePlease, style "display" "block" ] [ text "More Please!" ]
+                [ input
+                    [ placeholder "Enter the country name"
+                    , style "display" "block"
+                    , value model.content
+                    , onInput Search
+                    ]
+                    []
                 , viewList list
                 ]
 
@@ -126,12 +156,30 @@ viewItem country =
 -- HTTP
 
 
-search : Cmd Msg
-search =
-    Http.get
-        { url = "https://restcountries.eu/rest/v2/all?fields=name;flag"
-        , expect = Http.expectJson GotResponse searchDecoder
-        }
+search : Maybe String -> Cmd Msg
+search str =
+    let
+        baseUrl =
+            "https://restcountries.eu/rest/v2"
+
+        fields =
+            "?fields=name;flag"
+
+        expect =
+            Http.expectJson GotResponse searchDecoder
+    in
+    case str of
+        Nothing ->
+            Http.get
+                { url = String.join "/" [ baseUrl, "all" ++ fields ]
+                , expect = expect
+                }
+
+        Just name ->
+            Http.get
+                { url = String.join "/" [ baseUrl, "name", name ++ fields ]
+                , expect = expect
+                }
 
 
 searchDecoder : Decoder (List Country)
