@@ -282,10 +282,17 @@ search str =
                 }
 
         Just name ->
-            Http.get
-                { url = String.join "/" [ baseUrl, "name", name ++ fields ]
-                , expect = expect
-                }
+            if name |> String.trim |> String.isEmpty then
+                Http.get
+                    { url = String.join "/" [ baseUrl, "all" ++ fields ]
+                    , expect = expect
+                    }
+
+            else
+                Http.get
+                    { url = String.join "/" [ baseUrl, "name", name ++ fields ]
+                    , expect = expect
+                    }
 
 
 searchDecoder : Decoder (List Country)
