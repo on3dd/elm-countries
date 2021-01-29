@@ -3,7 +3,7 @@
 
 ## Things to be done
 - [x] Base search logic 🔍
-- [ ] Make the page look pretty 🎀
+- [x] Make the page look pretty 🎀
 - [ ] Debouncing for the search input ⛹️
 - [ ] Think of some more things to be done.. 🤔
 - [ ] Make cool README! 🦄
