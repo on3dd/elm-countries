@@ -1,10 +1,10 @@
-module Main exposing (Model, Msg(..), init, main, search, searchDecoder, subscriptions, update, view, viewResponse)
+module Main exposing (Model, Msg(..), init, main, search, searchDecoder, searchUrl, subscriptions, update, view, viewResponse)
 
 import Browser
 import Css exposing (..)
 import Html
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (class, classList, css, placeholder, src, value)
+import Html.Styled.Attributes exposing (class, css, placeholder, src, value)
 import Html.Styled.Events exposing (onClick, onInput)
 import Http
 import Json.Decode as D exposing (Decoder, field, list, map3, string)
@@ -70,7 +70,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Reload ->
-            ( { model | status = Loading }, search Nothing )
+            ( { model | content = "", status = Loading }, search Nothing )
 
         Search str ->
             ( { model | content = str, status = Loading }, search (Just str) )
@@ -143,44 +143,39 @@ viewResponse model =
     case model.status of
         Failure ->
             div
-                [ classList
-                    [ ( "app__search", True )
-                    , ( "app__search-failure", True )
+                [ class "app__search"
+                , css
+                    [ textAlign center
                     ]
                 ]
-                [ span
-                    [ class "search__error" ]
+                [ p
+                    [ class "search__error"
+                    , css
+                        []
+                    ]
                     [ text "I could not load a list of countries for some reason. " ]
                 , button
-                    [ class "search__text", onClick Reload ]
+                    [ onClick Reload
+                    , class "search__text"
+                    , css
+                        [ display inlineBlock
+                        , fontSize (rem 1)
+                        , padding2 (rem 0.5) (rem 1)
+                        ]
+                    ]
                     [ text "Try Again!" ]
                 ]
 
         Loading ->
             div
-                [ classList
-                    [ ( "app__search", True )
-                    , ( "app__search-loading", True )
-                    ]
+                [ class "app__search"
                 , css
                     [ displayFlex
                     , flexDirection column
                     , alignItems center
                     ]
                 ]
-                [ input
-                    [ placeholder "Enter the country name"
-                    , value model.content
-                    , onInput Search
-                    , class "search__input"
-                    , css
-                        [ display block
-                        , padding2 (rem 0.5) (rem 1)
-                        , marginBottom (rem 2)
-                        , fontSize (rem 1)
-                        ]
-                    ]
-                    []
+                [ viewInput model.content
                 , span
                     [ class "search__input" ]
                     [ text "Loading..." ]
@@ -188,31 +183,33 @@ viewResponse model =
 
         Success list ->
             div
-                [ classList
-                    [ ( "app__search", True )
-                    , ( "app__search-success", True )
-                    ]
+                [ class "app__search"
                 , css
                     [ displayFlex
                     , flexDirection column
                     , alignItems center
                     ]
                 ]
-                [ input
-                    [ placeholder "Enter the country name"
-                    , value model.content
-                    , onInput Search
-                    , class "search__input"
-                    , css
-                        [ display block
-                        , padding2 (rem 0.5) (rem 1)
-                        , marginBottom (rem 2)
-                        , fontSize (rem 1)
-                        ]
-                    ]
-                    []
+                [ viewInput model.content
                 , viewList list
                 ]
+
+
+viewInput : String -> Html Msg
+viewInput content =
+    input
+        [ placeholder "Enter the country name"
+        , value content
+        , onInput Search
+        , class "search__input"
+        , css
+            [ display block
+            , fontSize (rem 1)
+            , padding2 (rem 0.5) (rem 1)
+            , marginBottom (rem 2)
+            ]
+        ]
+        []
 
 
 viewList : List Country -> Html Msg
@@ -307,35 +304,31 @@ viewItem country =
 
 search : Maybe String -> Cmd Msg
 search str =
+    Http.get
+        { url = searchUrl str
+        , expect = Http.expectJson GotResponse searchDecoder
+        }
+
+
+searchUrl : Maybe String -> String
+searchUrl str =
     let
         baseUrl =
             "https://restcountries.eu/rest/v2"
 
         fields =
             "?fields=name;flag;region"
-
-        expect =
-            Http.expectJson GotResponse searchDecoder
     in
     case str of
         Nothing ->
-            Http.get
-                { url = String.join "/" [ baseUrl, "all" ++ fields ]
-                , expect = expect
-                }
+            String.join "/" [ baseUrl, "all" ++ fields ]
 
         Just name ->
             if name |> String.trim |> String.isEmpty then
-                Http.get
-                    { url = String.join "/" [ baseUrl, "all" ++ fields ]
-                    , expect = expect
-                    }
+                String.join "/" [ baseUrl, "all" ++ fields ]
 
             else
-                Http.get
-                    { url = String.join "/" [ baseUrl, "name", name ++ fields ]
-                    , expect = expect
-                    }
+                String.join "/" [ baseUrl, "name", name ++ fields ]
 
 
 searchDecoder : Decoder (List Country)
