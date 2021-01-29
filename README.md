@@ -6,7 +6,8 @@
 - [x] Make the page look pretty 🎀
 - [ ] Debouncing for the search input ⛹️
 - [ ] Think of some more things to be done.. 🤔
-- [ ] Make cool README! 🦄
+- [x] Make cool README! 🦄
 
 ## Technology stack
-- ONLY ELM LOL! 🤩
+- elm 🤩
+- elm-css
