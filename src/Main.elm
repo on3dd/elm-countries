@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), init, main, search, searchDecoder, searchUrl, subscriptions, update, view, viewResponse)
+module Main exposing (..)
 
 import Browser
 import Css exposing (..)
