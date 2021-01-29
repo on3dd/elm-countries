@@ -7,7 +7,7 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, classList, css, placeholder, src, value)
 import Html.Styled.Events exposing (onClick, onInput)
 import Http
-import Json.Decode as D exposing (Decoder, field, list, map2, string)
+import Json.Decode as D exposing (Decoder, field, list, map3, string)
 
 
 
@@ -17,6 +17,7 @@ import Json.Decode as D exposing (Decoder, field, list, map2, string)
 type alias Country =
     { flag : String
     , name : String
+    , region : String
     }
 
 
@@ -101,7 +102,7 @@ view model =
     div
         [ class "app"
         , css
-            [ width (vw 100)
+            [ width (pct 100)
             , fontSize (px 16)
             , fontFamilies
                 [ "Segoe UI"
@@ -119,24 +120,19 @@ view model =
             [ class "app__container"
             , css
                 [ width (pct 100)
-                , maxWidth (px 500)
+                , maxWidth (px 400)
                 , margin2 (px 0) auto
                 , textAlign center
                 ]
             ]
-            [ h2
+            [ h1
                 [ class "app__heading"
                 , css
                     [ margin2 (rem 1) (px 0) ]
                 ]
                 [ text "Countries" ]
             , div
-                [ class "app__view"
-                , css
-                    [ width inherit
-                    , maxWidth (px 500)
-                    ]
-                ]
+                [ class "app__view" ]
                 [ viewResponse model ]
             ]
         ]
@@ -179,7 +175,9 @@ viewResponse model =
                     , class "search__input"
                     , css
                         [ display block
-                        , marginBottom (rem 0.5)
+                        , padding2 (rem 0.5) (rem 1)
+                        , marginBottom (rem 2)
+                        , fontSize (rem 1)
                         ]
                     ]
                     []
@@ -207,7 +205,9 @@ viewResponse model =
                     , class "search__input"
                     , css
                         [ display block
+                        , padding2 (rem 0.5) (rem 1)
                         , marginBottom (rem 2)
+                        , fontSize (rem 1)
                         ]
                     ]
                     []
@@ -233,28 +233,71 @@ viewItem country =
     li
         [ class "app__item"
         , css
-            [ display block
-            , marginBottom (rem 1)
-            , overflowX hidden
+            [ displayFlex
+            , marginBottom (rem 1.5)
+            , border3 (px 1) solid (rgba 0 0 0 0.1)
+            , boxShadow5 (px 0) (px 4) (px 12) (px 0) (rgba 0 0 0 0.1)
             ]
         ]
-        [ span
-            [ class "item__text"
+        [ div
+            [ class "item__flag"
             , css
-                [ display block
-                , marginBottom (rem 0.5)
+                [ flex (int 2)
+                , position relative
+                , overflow hidden
                 ]
             ]
-            [ text country.name ]
-        , img
-            [ src country.flag
-            , class "item__flag"
+            [ img
+                [ src country.flag
+                , class "item__image"
+                , css
+                    [ display block
+                    , height (pct 100)
+                    , position absolute
+                    , left (pct 50)
+                    , transform (translateX (pct -50))
+                    ]
+                ]
+                []
+            ]
+        , div
+            [ class "item__info"
             , css
-                [ display block
-                , width (pct 100)
+                [ flex (int 3)
+                , margin2 (rem 1) (rem 1)
+                , textAlign left
                 ]
             ]
-            []
+            [ span
+                [ class "item__name"
+                , css
+                    [ display block
+                    , marginBottom (rem 0.5)
+                    , fontSize (rem 1.25)
+                    , fontWeight (int 600)
+                    ]
+                ]
+                [ text country.name ]
+            , span
+                [ class "item__region"
+                , css
+                    [ display block
+                    , marginBottom (rem 0.5)
+                    ]
+                ]
+                [ span
+                    [ class "item__region-bold"
+                    , css
+                        [ display inlineBlock
+                        , marginRight (ch 0.5)
+                        , fontWeight (int 500)
+                        , color (hex "#444")
+                        ]
+                    ]
+                    [ text "Region:" ]
+                , text country.region
+                ]
+            ]
         ]
 
 
@@ -269,7 +312,7 @@ search str =
             "https://restcountries.eu/rest/v2"
 
         fields =
-            "?fields=name;flag"
+            "?fields=name;flag;region"
 
         expect =
             Http.expectJson GotResponse searchDecoder
@@ -298,7 +341,8 @@ search str =
 searchDecoder : Decoder (List Country)
 searchDecoder =
     D.list
-        (map2 Country
+        (map3 Country
             (field "flag" string)
             (field "name" string)
+            (field "region" string)
         )
